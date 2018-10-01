@@ -2,16 +2,17 @@ import {Player} from './player';
 
 export class Game {
 
+    private MAX_COINS = 6;
+
     private players: Array<Player> = [];
     private currentPlayerIndex: number = 0;
-    private isGettingOutOfPenaltyBox: boolean = false;
 
     private popQuestions: Array<string> = [];
     private scienceQuestions: Array<string> = [];
     private sportsQuestions: Array<string> = [];
     private rockQuestions: Array<string> = [];
 
-    private categories = [
+    private categories: Array<string> = [
         'Pop', 'Science', 'Sports', 'Rock',
         'Pop', 'Science', 'Sports', 'Rock',
         'Pop', 'Science', 'Sports', 'Rock',
@@ -19,104 +20,149 @@ export class Game {
 
     constructor() {
         for (let i = 0; i < 50; i++) {
-            this.popQuestions.push("Pop Question " + i);
-            this.scienceQuestions.push("Science Question " + i);
-            this.sportsQuestions.push("Sports Question " + i);
-            this.rockQuestions.push("Rock Question " + i);
+            this.popQuestions.push('Pop Question ' + i);
+            this.scienceQuestions.push('Science Question ' + i);
+            this.sportsQuestions.push('Sports Question ' + i);
+            this.rockQuestions.push('Rock Question ' + i);
         }
     }
 
+    /**
+     * Adds a player to the game.
+     * @param player The player to add.
+     */
     public add(player: Player) {
         this.players.push(player);
-        console.log(player.getName() + " was added");
-        console.log("They are player number " + this.players.length);
+        console.log(player.getName() + ' was added');
+        console.log('They are player number ' + this.players.length);
     }
 
-    public next(player = this.players[this.currentPlayerIndex], roll = Math.floor(Math.random() * 6) + 1) {
-        console.log(player.getName() + " is the current player");
-        console.log("They have rolled a " + roll);
-
-        if (player.isInPenaltyBox()) {
-            if (roll % 2 !== 0) {
-                this.isGettingOutOfPenaltyBox = true;
-
-                console.log(player.getName() + " is getting out of the penalty box");
-                player.setPlace((player.getPlace() + roll) % this.categories.length);
-
-                console.log(player.getName() + "'s new location is " + player.getPlace());
-                console.log("The category is " + this.getCurrentCategory());
-                this.askQuestion();
-            } else {
-                console.log(player.getName() + " is not getting out of the penalty box");
-                this.isGettingOutOfPenaltyBox = false;
-            }
-        } else {
-            player.setPlace((player.getPlace() + roll) % this.categories.length);
-        
-            console.log(player.getName() + "'s new location is " + player.getPlace());
-            console.log("The category is " + this.getCurrentCategory());
-            this.askQuestion();
-        }
-
-        if (Math.floor(Math.random() * 10) === 7) {
-            this.printWrongAnswer();
-        } else {
-            this.printCorrectAnswer();
-        }
-
-        if (this.didPlayerWin()) {
-            return false;
-        }
-
-        this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
-
-        return true;
+    /**
+     * Gets the players that are in the game.
+     * @return A list of added players.
+     */
+    public getPlayers(): Array<Player> {
+        return this.players;
     }
 
-    public getNextPlayer() {
+    /**
+     * Gets the current player.
+     * @returns {Player} The current player.
+     */
+    public getCurrentPlayer(): Player {
         return this.players[this.currentPlayerIndex];
     }
 
-    private askQuestion(): void {
-        switch (this.getCurrentCategory()) {
-            case 'Pop':
-                console.log(this.popQuestions.shift());
-                break;
-            case 'Science':
-                console.log(this.scienceQuestions.shift());
-                break;
-            case 'Sports':
-                console.log(this.sportsQuestions.shift());
-                break;
-            case 'Rock':
-                console.log(this.rockQuestions.shift());
-                break;
+    /**
+     * Plays the next turn.
+     * @returns {boolean} Whether the game should continue.
+     */
+    public next(): boolean {
+        const player = this.getCurrentPlayer();
+        const roll = Math.floor(Math.random() * this.MAX_COINS) + 1;
+        console.log(player.getName() + ' is the current player');
+        console.log('They have rolled a ' + roll);
+
+        /*
+         * If the player is in the penalty box, get them out if they rolled an
+         * odd number. If even, keep them in the box and end the turn.
+         */
+        if (player.isInPenaltyBox()) {
+            if (roll % 2 !== 0) {
+                player.setInPenaltyBox(false);
+                console.log(player.getName() + ' is getting out of the penalty box');
+            } else {
+                console.log(player.getName() + ' is not getting out of the penalty box');
+                this.endTurn();
+                return true;
+            }
         }
-    }
 
-    private getCurrentCategory(): string {
-        const place = this.players[this.currentPlayerIndex].getPlace();
-        return this.categories[place];
-    }
+        // Update the player's place on the board
+        player.setPlace((player.getPlace() + roll) % this.categories.length);
 
-    private didPlayerWin(): boolean {
-        return this.players[this.currentPlayerIndex].getPurse() === 6;
-    }
+        const category = this.getCategory(player.getPlace());
+        console.log(player.getName() + '\'s new location is ' + player.getPlace());
+        console.log('The category is ' + category);
+        console.log(this.getNextQuestion(category));
 
-    private printWrongAnswer() {
-        const player = this.players[this.currentPlayerIndex];
-        console.log('Question was incorrectly answered');
-        console.log(player.getName() + " was sent to the penalty box");
-        player.setInPenaltyBox(true);
-    }
-
-    private printCorrectAnswer() {
-        const player = this.players[this.currentPlayerIndex];
-        if (!player.isInPenaltyBox() || (player.isInPenaltyBox() && this.isGettingOutOfPenaltyBox)) {
-            console.log("Answer was correct!!!!");
+        /*
+         * Determine if the player answered the question correcly. If not, add
+         * them to the penalty box.
+         */
+        if (Math.floor(Math.random() * 10) === 7) {
+            player.setInPenaltyBox(true);
+            this.printWrongAnswer();
+        } else {
             player.setPurse(player.getPurse() + 1);
-            console.log(player.getName() + " now has " + player.getPurse() + " Gold Coins.");
+            this.printCorrectAnswer();
+        }
+
+        if (this.isGameOver()) {
+            return false;
+        }
+
+        this.endTurn();
+        return true;
+    }
+
+    /**
+     * Checks if the current player has @MAX_COINS coins.
+     * @returns Whether the game is over.
+     */
+    public isGameOver(): boolean {
+        return this.getCurrentPlayer().getPurse() === this.MAX_COINS;
+    }
+
+    /**
+     * Gets the next question from a given category.
+     * @param {string} category The category.
+     * @returns {string} A question.
+     */
+    private getNextQuestion(category: string): string {
+        switch (category) {
+            case 'Pop':
+                return this.popQuestions.shift();
+            case 'Science':
+                return this.scienceQuestions.shift();
+            case 'Sports':
+                return this.sportsQuestions.shift();
+            case 'Rock':
+                return this.rockQuestions.shift();
         }
     }
 
+    /**
+     * Gets a category based on an index.
+     * @param {number} index The category index.
+     * @returns {string} The category.
+     */
+    private getCategory(index: number): string {
+        return this.categories[index];
+    }
+
+    /**
+     * Ends a player's turn.
+     */
+    private endTurn() {
+        this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+    }
+
+    /**
+     * Prints info about an incorrectly answered question.
+     */
+    private printWrongAnswer() {
+        const player = this.getCurrentPlayer();
+        console.log('Question was incorrectly answered');
+        console.log(player.getName() + ' was sent to the penalty box');
+    }
+
+    /**
+     * Prints info about a correctly answered question.
+     */
+    private printCorrectAnswer() {
+        const player = this.getCurrentPlayer();
+        console.log('Answer was correct!!!!');
+        console.log(player.getName() + ' now has ' + player.getPurse() + ' Gold Coins.');
+    }
 }
