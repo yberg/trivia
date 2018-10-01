@@ -1,10 +1,9 @@
+import {Player} from './player';
+
 export class Game {
 
-    private players: Array<string> = [];
-    private places: Array<number> = [];
-    private purses: Array<number> = [];
-    private inPenaltyBox: Array<boolean> = [];
-    private currentPlayer: number = 0;
+    private players: Array<Player> = [];
+    private currentPlayerIndex: number = 0;
     private isGettingOutOfPenaltyBox: boolean = false;
 
     private popQuestions: Array<string> = [];
@@ -27,10 +26,7 @@ export class Game {
     }
 
     public add(name: string): boolean {
-        this.players.push(name);
-        this.places[this.howManyPlayers() - 1] = 0;
-        this.purses[this.howManyPlayers() - 1] = 0;
-        this.inPenaltyBox[this.howManyPlayers() - 1] = false;
+        this.players.push(new Player(name));
 
         console.log(name + " was added");
         console.log("They are player number " + this.players.length);
@@ -38,39 +34,36 @@ export class Game {
         return true;
     }
 
-    private howManyPlayers(): number {
-        return this.players.length;
-    }
-
     public roll(roll: number) {
-        console.log(this.players[this.currentPlayer] + " is the current player");
+        const player = this.players[this.currentPlayerIndex];
+        console.log(player.getName() + " is the current player");
         console.log("They have rolled a " + roll);
     
-        if (this.inPenaltyBox[this.currentPlayer]) {
+        if (player.isInPenaltyBox()) {
           if (roll % 2 != 0) {
             this.isGettingOutOfPenaltyBox = true;
     
-            console.log(this.players[this.currentPlayer] + " is getting out of the penalty box");
-            this.places[this.currentPlayer] = this.places[this.currentPlayer] + roll;
-            if (this.places[this.currentPlayer] > 11) {
-              this.places[this.currentPlayer] = this.places[this.currentPlayer] - 12;
+            console.log(player.getName() + " is getting out of the penalty box");
+            player.setPlace(player.getPlace() + roll);
+            if (player.getPlace() > 11) {
+                player.setPlace(player.getPlace() - 12);
             }
     
-            console.log(this.players[this.currentPlayer] + "'s new location is " + this.places[this.currentPlayer]);
+            console.log(player.getName() + "'s new location is " + player.getPlace());
             console.log("The category is " + this.currentCategory());
             this.askQuestion();
           } else {
-            console.log(this.players[this.currentPlayer] + " is not getting out of the penalty box");
+            console.log(player.getName() + " is not getting out of the penalty box");
             this.isGettingOutOfPenaltyBox = false;
           }
         } else {
     
-          this.places[this.currentPlayer] = this.places[this.currentPlayer] + roll;
-          if (this.places[this.currentPlayer] > 11) {
-            this.places[this.currentPlayer] = this.places[this.currentPlayer] - 12;
+          player.setPlace(player.getPlace() + roll);
+          if (player.getPlace() > 11) {
+            player.setPlace(player.getPlace() - 12);
           }
     
-          console.log(this.players[this.currentPlayer] + "'s new location is " + this.places[this.currentPlayer]);
+          console.log(player.getName() + "'s new location is " + player.getPlace());
           console.log("The category is " + this.currentCategory());
           this.askQuestion();
         }
@@ -88,60 +81,62 @@ export class Game {
     }
 
     private currentCategory(): string {
-        if (this.places[this.currentPlayer] == 0)
+        const player = this.players[this.currentPlayerIndex];
+        if (player.getPlace() == 0)
             return 'Pop';
-        if (this.places[this.currentPlayer] == 4)
+        if (player.getPlace() == 4)
             return 'Pop';
-        if (this.places[this.currentPlayer] == 8)
+        if (player.getPlace() == 8)
             return 'Pop';
-        if (this.places[this.currentPlayer] == 1)
+        if (player.getPlace() == 1)
             return 'Science';
-        if (this.places[this.currentPlayer] == 5)
+        if (player.getPlace() == 5)
             return 'Science';
-        if (this.places[this.currentPlayer] == 9)
+        if (player.getPlace() == 9)
             return 'Science';
-        if (this.places[this.currentPlayer] == 2)
+        if (player.getPlace() == 2)
             return 'Sports';
-        if (this.places[this.currentPlayer] == 6)
+        if (player.getPlace() == 6)
             return 'Sports';
-        if (this.places[this.currentPlayer] == 10)
+        if (player.getPlace() == 10)
             return 'Sports';
         return 'Rock';
     }
 
     private didPlayerWin(): boolean {
-        return !(this.purses[this.currentPlayer] == 6)
+        return !(this.players[this.currentPlayerIndex].getPurse() == 6)
     }
 
     public wrongAnswer(): boolean {
+        const player = this.players[this.currentPlayerIndex];
         console.log('Question was incorrectly answered');
-        console.log(this.players[this.currentPlayer] + " was sent to the penalty box");
-        this.inPenaltyBox[this.currentPlayer] = true;
+        console.log(player.getName() + " was sent to the penalty box");
+        player.setInPenaltyBox(true);
     
-        this.currentPlayer += 1;
-        if (this.currentPlayer == this.players.length)
-            this.currentPlayer = 0;
+        this.currentPlayerIndex += 1;
+        if (this.currentPlayerIndex == this.players.length)
+            this.currentPlayerIndex = 0;
         return true;
     }
 
     public wasCorrectlyAnswered(): boolean {
-        if (this.inPenaltyBox[this.currentPlayer]) {
+        const player = this.players[this.currentPlayerIndex];
+        if (player.isInPenaltyBox()) {
             if (this.isGettingOutOfPenaltyBox) {
               console.log('Answer was correct!!!!');
-              this.purses[this.currentPlayer] += 1;
-              console.log(this.players[this.currentPlayer] + " now has " +
-              this.purses[this.currentPlayer] + " Gold Coins.");
+              player.setPurse(player.getPurse() + 1);
+              console.log(player.getName() + " now has " + player.getPurse() + " Gold Coins.");
       
               var winner = this.didPlayerWin();
-              this.currentPlayer += 1;
-              if (this.currentPlayer == this.players.length)
-                this.currentPlayer = 0;
+              this.currentPlayerIndex += 1;
+              if (this.currentPlayerIndex == this.players.length)
+                this.currentPlayerIndex = 0;
       
               return winner;
             } else {
-              this.currentPlayer += 1;
-              if (this.currentPlayer == this.players.length)
-                this.currentPlayer = 0;
+              this.currentPlayerIndex += 1;
+              if (this.currentPlayerIndex == this.players.length)
+                this.currentPlayerIndex = 0;
               return true;
             }
       
@@ -150,18 +145,21 @@ export class Game {
       
             console.log("Answer was correct!!!!");
       
-            this.purses[this.currentPlayer] += 1;
-            console.log(this.players[this.currentPlayer] + " now has " +
-                this.purses[this.currentPlayer] + " Gold Coins.");
+            player.setPurse(player.getPurse() + 1);
+            console.log(player.getName() + " now has " + player.getPurse() + " Gold Coins.");
       
             var winner = this.didPlayerWin();
       
-            this.currentPlayer += 1;
-            if (this.currentPlayer == this.players.length)
-                this.currentPlayer = 0;
+            this.currentPlayerIndex += 1;
+            if (this.currentPlayerIndex == this.players.length)
+                this.currentPlayerIndex = 0;
       
             return winner;
           }
+    }
+
+    public getPlayers(): Array<Player> {
+        return this.players;
     }
 
 }
