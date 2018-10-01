@@ -1,27 +1,17 @@
 import {Game} from './game';
+import {Player} from './player';
 
 export class GameRunner {
     public static main(): void {
         const game = new Game();
-        game.add("Chet");
-        game.add("Pat");
-        game.add("Sue");
+        game.add(new Player("Chet"));
+        game.add(new Player("Pat"));
+        game.add(new Player("Sue"));
 
-        let notAWinner;
-        do {
-
-            game.roll(Math.floor(Math.random() * 6) + 1);
-        
-            if (Math.floor(Math.random() * 10) == 7) {
-            notAWinner = game.wrongAnswer();
-            } else {
-            notAWinner = game.wasCorrectlyAnswered();
-            }
-        
-        } while (notAWinner);
+        while (game.next()) {
+            console.log('-----------------------');
+        }
     }
 }
 
 GameRunner.main();
-
-  
