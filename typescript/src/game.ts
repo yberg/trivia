@@ -2,7 +2,8 @@ import {Player} from './player';
 
 export class Game {
 
-    private MAX_COINS = 6;
+    public DIE_SIDES = 6;
+    public MAX_COINS = 6;
 
     private players: Array<Player> = [];
     private currentPlayerIndex: number = 0;
@@ -29,17 +30,17 @@ export class Game {
 
     /**
      * Adds a player to the game.
-     * @param player The player to add.
+     * @param {Player} player The player to add.
      */
-    public add(player: Player) {
+    public addPlayer(player: Player) {
         this.players.push(player);
         console.log(player.getName() + ' was added');
         console.log('They are player number ' + this.players.length);
     }
 
     /**
-     * Gets the players that are in the game.
-     * @return A list of added players.
+     * Gets the players in the game.
+     * @return {Array<Player>} A list of added players.
      */
     public getPlayers(): Array<Player> {
         return this.players;
@@ -55,11 +56,14 @@ export class Game {
 
     /**
      * Plays the next turn.
+     * @param {Player=} player The player.
+     * @param {number=} roll The roll.
+     * @param {boolean=} correctAnswer Whether the player will answer correct.
      * @returns {boolean} Whether the game should continue.
      */
-    public next(): boolean {
-        const player = this.getCurrentPlayer();
-        const roll = Math.floor(Math.random() * this.MAX_COINS) + 1;
+    public next(player?: Player, roll?: number, correctAnswer?: boolean): boolean {
+        player = player || this.getCurrentPlayer();
+        roll = roll || Math.floor(Math.random() * this.DIE_SIDES) + 1;
         console.log(player.getName() + ' is the current player');
         console.log('They have rolled a ' + roll);
 
@@ -90,7 +94,10 @@ export class Game {
          * Determine if the player answered the question correcly. If not, add
          * them to the penalty box.
          */
-        if (Math.floor(Math.random() * 10) === 7) {
+        if (correctAnswer == undefined) {
+            correctAnswer = Math.floor(Math.random() * 10) !== 7;
+        }
+        if (!correctAnswer) {
             player.setInPenaltyBox(true);
             this.printWrongAnswer();
         } else {
@@ -107,7 +114,7 @@ export class Game {
     }
 
     /**
-     * Checks if the current player has @MAX_COINS coins.
+     * Checks if the current player has @MAX_COINS Coins.
      * @returns Whether the game is over.
      */
     public isGameOver(): boolean {
